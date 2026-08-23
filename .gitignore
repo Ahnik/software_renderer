@@ -1,0 +1,8 @@
+framebuffer.tga
+
+# Build directory
+/build/
+
+# Executable files
+*.out
+*.exe
