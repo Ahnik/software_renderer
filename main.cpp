@@ -7,57 +7,35 @@ constexpr TGAColor red     = {  0,   0, 255, 255};
 constexpr TGAColor blue    = {255, 128,  64, 255};
 constexpr TGAColor yellow  = {  0, 200, 255, 255};
 
-void plot_line_low(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
+void draw_line(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
+    bool steep = std::abs(bx - ax) < std::abs(by - ay);
+    if (steep) {
+        std::swap(ax, ay);
+        std::swap(bx, by);
+    }
     if (ax > bx) {
         std::swap(ax, bx);
         std::swap(ay, by);
     }
     const int dx = bx - ax;
-    const int dy = (by > ay) ? (by - ay) : (ay - by);
+    const int dy = std::abs(by - ay);
     const int increment_y = (by >= ay) ? 1 : -1;
 
     int p = 2 * dy - dx;
-    int y = ay;
 
+    int y = ay;
     for (int x = ax; x <= bx; x++) {
-        framebuffer.set(x, y, color);
+        if (steep)
+            framebuffer.set(y, x, color);
+        else
+            framebuffer.set(x, y, color);
+
         if (p > 0) {
             y += increment_y;
             p += 2 * (dy - dx);
         } else
             p += 2 * dy;
     }
-}
-
-void plot_line_high(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
-    if (ay > by) {
-        std::swap(ay, by);
-        std::swap(ax, bx);
-    }
-    const int dy = by - ay;
-    const int dx = (bx > ax) ? (bx - ax) : (ax - bx);
-    const int increment_x = (bx >= ax) ? 1 : -1;
-
-    int p = 2 * dx - dy;
-    int x = ax;
-
-    for (int y = ay; y <= by; y++) {
-        framebuffer.set(x, y, color);
-        if (p > 0) {
-            x += increment_x;
-            p += 2 * (dx - dy);
-        } else
-            p += 2 * dx;
-    }
-}
-
-void draw_line(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
-    const int dx = bx - ax;
-    const int dy = by - ay;
-    if (std::abs(dy) < std::abs(dx)) 
-        plot_line_low(ax, ay, bx, by, framebuffer, color);
-    else
-        plot_line_high(ax, ay, bx, by, framebuffer, color);
 }
 
 int main(int argc, char** argv) {
