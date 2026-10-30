@@ -41,8 +41,12 @@ Model::Model(std::filesystem::path filePath) {
             error = parseNormal(line);
         } else if (line.starts_with("vt ")) {
             // texture coordinates
-            /* TODO */
-        } else continue;
+            error = parseTexture(line);
+        } else if (line.starts_with("vp ")) {
+            // parameter space vertices
+            error = parseParameter(line);
+        } else
+            continue;
 
         if (error != ParseError::Ok)
             throw std::runtime_error(parseErrorMessage(error));
@@ -144,6 +148,52 @@ ParseError Model::parseNormal(std::string_view line) {
             return ParseError::OutOfRange;
     }
     m_normals.emplace_back(normal);
+    return ParseError::Ok;
+}
+
+ParseError Model::parseTexture(std::string_view line) {
+    line.remove_prefix(3);
+    Texture texture {0.0, 0.0, 0.0};
+    for (int i = 0; i < 3; i++) {
+        std::string_view::size_type pos = line.find_first_not_of(whitespaces);
+        if (pos == std::string_view::npos) {
+            if (i == 0) return ParseError::UnexpectedEndOfLine;
+            else break;
+        }
+        line.remove_prefix(pos);
+
+        auto [ptr, ec] = std::from_chars(line.data(), line.data() + line.size(), texture[i]);
+        if (ec == std::errc())
+            line.remove_prefix(ptr - line.data());
+        else if (ec == std::errc::invalid_argument)
+            return ParseError::InvalidDouble;
+        else if (ec == std::errc::result_out_of_range)
+            return ParseError::OutOfRange;
+    }
+    m_textures.emplace_back(texture);
+    return ParseError::Ok;
+}
+
+ParseError Model::parseParameter(std::string_view line) {
+    line.remove_prefix(3);
+    Parameter parameters {0.0, 0.0, 1.0};
+    for (int i = 0; i < 3; i++) {
+        std::string_view::size_type pos = line.find_first_not_of(whitespaces);
+        if (pos == std::string_view::npos) {
+            if (i == 0) return ParseError::UnexpectedEndOfLine;
+            else break;
+        }
+        line.remove_prefix(pos);
+
+        auto [ptr, ec] = std::from_chars(line.data(), line.data() + line.size(), parameters[i]);
+        if (ec == std::errc())
+            line.remove_prefix(ptr - line.data());
+        else if (ec == std::errc::invalid_argument)
+            return ParseError::InvalidDouble;
+        else if (ec == std::errc::result_out_of_range)
+            return ParseError::OutOfRange;
+    }
+    m_parameters.emplace_back(parameters);
     return ParseError::Ok;
 }
 
