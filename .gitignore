@@ -1,7 +1,16 @@
-framebuffer.tga
+# Any image files
+*.tga
+
+# Any Wavefront files
+*.obj
 
 # Build directory
 /build/
+/bin/
+
+# Object files
+*.o
+*.d
 
 # Executable files
 *.out

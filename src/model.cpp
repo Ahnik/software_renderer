@@ -107,7 +107,7 @@ ParseError Model::parseFace(std::string_view line) {
             line.remove_prefix(1);
             if (line.starts_with("/") && i == 1) continue;
 
-            auto result = std::from_chars(line.data(), line.data() + line.size(), indices[i]);
+            result = std::from_chars(line.data(), line.data() + line.size(), indices[i]);
             if (result.ec == std::errc())
                 line.remove_prefix(result.ptr - line.data());
             else if (result.ec == std::errc::invalid_argument)
@@ -130,13 +130,10 @@ ParseError Model::parseFace(std::string_view line) {
 ParseError Model::parseNormal(std::string_view line) {
     line.remove_prefix(3);
     Normal normal {0.0, 0.0, 0.0};
-    double w {1.0};
     for (int i = 0; i < 3; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
-        if (pos == std::string_view::npos) {
-            if (i < 3) return ParseError::UnexpectedEndOfLine;
-            else break;
-        }
+        if (pos == std::string_view::npos)
+            return ParseError::UnexpectedEndOfLine;
         line.remove_prefix(pos);
 
         auto [ptr, ec] = std::from_chars(line.data(), line.data() + line.size(), normal[i]);
@@ -199,7 +196,7 @@ ParseError Model::parseParameter(std::string_view line) {
 
 void Model::renderWireframe(TGAImage& framebuffer, TGAColor lineColor, TGAColor pointColor) const {
     for (const Face& face : m_faces) {
-        for (int i = 0; i < face.size(); i++) {
+        for (std::size_t i = 0; i < face.size(); i++) {
             // draw line from point i to i + 1
             int a_index = face[i][0];
             int b_index = face[(i+1) % face.size()][0];
