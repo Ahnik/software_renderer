@@ -203,15 +203,31 @@ void Model::renderWireframe(TGAImage& framebuffer, TGAColor lineColor, TGAColor 
             double ax = m_vertices[a_index][0], ay = m_vertices[a_index][1];
             double bx = m_vertices[b_index][0], by = m_vertices[b_index][1];
 
-            int ax_pixel = std::round((ax + 1.0) * (framebuffer.width()  - 1) / 2.0);
-            int ay_pixel = std::round((ay + 1.0) * (framebuffer.height() - 1) / 2.0);
-            int bx_pixel = std::round((bx + 1.0) * (framebuffer.width()  - 1) / 2.0);
-            int by_pixel = std::round((by + 1.0) * (framebuffer.height() - 1) / 2.0);
+            auto [ax_pixel, ay_pixel] = project(ax, ay, framebuffer.height(), framebuffer.width());
+            auto [bx_pixel, by_pixel] = project(bx, by, framebuffer.height(), framebuffer.width());
             drawLine(ax_pixel, ay_pixel, bx_pixel, by_pixel, framebuffer, lineColor);
             framebuffer.set(ax_pixel, ay_pixel, pointColor);
             framebuffer.set(bx_pixel, by_pixel, pointColor);
         }
     }
+}
+
+void Model::render(TGAImage& framebuffer) const {
+    for (const Face& face : m_faces) {
+        if (face.size() == 3) {
+            int a = face[0][0], b = face[1][0], c = face[2][0];
+            auto [ax, ay] = project(m_vertices[a][0], m_vertices[a][1], framebuffer.height(), framebuffer.width());
+            auto [bx, by] = project(m_vertices[b][0], m_vertices[b][1], framebuffer.height(), framebuffer.width());
+            auto [cx, cy] = project(m_vertices[c][0], m_vertices[c][1], framebuffer.height(), framebuffer.width());
+            TGAColor color;
+            for (int i = 0; i < 3; i++) color[i] = std::rand() % 255;
+            drawTriangle(ax, ay, bx, by, cx, cy, framebuffer, color);
+        }
+    }
+}
+
+Pixel project(double x, double y, int height, int width) {
+    return Pixel((x + 1.0) * width / 2.0, (y + 1.0) * height / 2.0);
 }
 
 void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
@@ -238,5 +254,29 @@ void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor co
             error += 2 * (dy - dx);
         } else
             error += 2 * dy;
+    }
+}
+
+double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy) {
+    return 0.5 * ((by - ay) * (bx + ax) + (cy - by) * (cx + bx) + (ay - cy) * (ax + cx));
+}
+
+void drawTriangle(int ax, int ay, int bx, int by, int cx, int cy, TGAImage& framebuffer, TGAColor color) {
+    int bbminx = std::min(ax, std::min(bx, cx));
+    int bbminy = std::min(ay, std::min(by, cy));
+    int bbmaxx = std::max(ax, std::max(bx, cx));
+    int bbmaxy = std::max(ay, std::max(by, cy));
+    double totalArea = signedTriangleArea(ax, ay, bx, by, cx, cy);
+    if (totalArea < 1.0) return;
+
+#pragma omp parallel for
+    for (int x = bbminx; x <= bbmaxx; x++) {
+        for (int y = bbminy; y <= bbmaxy; y++) {
+            double alpha = signedTriangleArea(x, y, bx, by, cx, cy) / totalArea;
+            double beta  = signedTriangleArea(x, y, cx, cy, ax, ay) / totalArea;
+            double gamma = signedTriangleArea(x, y, ax, ay, bx, by) / totalArea;
+            if (alpha >= 0 && beta >= 0 && gamma >= 0)
+                framebuffer.set(x, y, color);
+        }
     }
 }

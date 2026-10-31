@@ -1,8 +1,9 @@
 # Any image files
 *.tga
 
-# Any Wavefront files
+# Any Wavefront files (or anything inside obj directory)
 *.obj
+/obj/
 
 # Build directory
 /build/

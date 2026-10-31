@@ -18,6 +18,8 @@ MAIN_BIN = $(BIN_DIR)/renderer
 # Targets
 .PHONY: all build clean
 
+all: build
+
 # At the beginning, make sure that the bin directory exists
 start:
 	mkdir -p $(BIN_DIR)
