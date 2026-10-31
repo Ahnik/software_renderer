@@ -2,18 +2,18 @@
 #define MODEL_H
 
 #include "tgaimage.h"
+#include "vec.h"
 #include <vector>
-#include <array>
 #include <string_view>
 #include <utility>
 #include <filesystem>
 #include <cmath>
 
-using Vertex    = std::array<double, 3>;
-using Texture   = std::array<double, 3>;
-using Parameter = std::array<double, 3>;
-using Normal    = std::array<double, 3>;
-using Face      = std::vector<std::array<int, 3>>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
+using Vertex    = vec3;
+using Texture   = vec3;
+using Parameter = vec3;
+using Normal    = vec3;
+using Face      = std::vector<vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
 using Pixel     = std::tuple<int, int, int>;
 
 enum class ParseError {
@@ -27,16 +27,15 @@ enum class ParseError {
 
 // Global functions
 const char* parseErrorMessage(ParseError error);
-
 void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color);
 double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy);
 void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color);
 
 inline Pixel project(const Vertex& vertex, int height, int width) {
     return {
-        std::round((vertex[0] + 1.0) *  width / 2.0),
-        std::round((vertex[1] + 1.0) * height / 2.0),
-        std::round((vertex[2] + 1.0) *  255.0 / 2.0)
+        std::round((vertex.x + 1.0) *  width / 2.0),
+        std::round((vertex.y + 1.0) * height / 2.0),
+        std::round((vertex.z + 1.0) *  255.0 / 2.0)
     };
 }
 

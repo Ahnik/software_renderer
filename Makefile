@@ -33,3 +33,4 @@ build: $(MAIN_BIN)
 # For cleaning up
 clean:
 	rm -rf $(BIN_DIR)
+	rm *.tga

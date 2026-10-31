@@ -82,7 +82,7 @@ ParseError Model::parseFace(std::string_view line) {
     Face face {};
     int vertexCount = 0;
     while (!line.empty()) {
-        std::array<int, 3> indices {0, 0, 0};
+        vec3 indices {0, 0, 0};
         // remove whitespaces
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos)
