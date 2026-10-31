@@ -1,6 +1,6 @@
 # Config
 CC		= clang++
-CFLAGS	= -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -O3 -MMD -MP -Iinclude -g
+CFLAGS	= -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -O3 -MMD -MP -Iinclude
 BIN_DIR = bin
 SRC_DIR	= src
 

@@ -30,26 +30,24 @@ Model::Model(std::filesystem::path filePath) {
     while (std::getline(file, rawLine)) {
         std::string_view line(rawLine);
         ParseError error {ParseError::Ok};
-        if (line.starts_with("v ")) {
+        if (line.starts_with("v "))
             // vertex
             error = parseVertex(line);
-        } else if (line.starts_with("f ")) {
-            // face
+        else if (line.starts_with("f "))    // face
             error = parseFace(line);
-        } else if (line.starts_with("vn ")) {
-            // normal vector
+        else if (line.starts_with("vn "))   // vertex normal
             error = parseNormal(line);
-        } else if (line.starts_with("vt ")) {
-            // texture coordinates
+        else if (line.starts_with("vt "))   // texture coordinates
             error = parseTexture(line);
-        } else if (line.starts_with("vp ")) {
-            // parameter space vertices
+        else if (line.starts_with("vp "))   // parameter space vertices
             error = parseParameter(line);
-        } else
+        else
             continue;
 
-        if (error != ParseError::Ok)
+        if (error != ParseError::Ok) {
             throw std::runtime_error(parseErrorMessage(error));
+            break;
+        }
     }
 }
 
@@ -194,40 +192,26 @@ ParseError Model::parseParameter(std::string_view line) {
     return ParseError::Ok;
 }
 
-void Model::renderWireframe(TGAImage& framebuffer, TGAColor lineColor, TGAColor pointColor) const {
+void Model::render(TGAImage& framebuffer, TGAImage& zbuffer) const {
     for (const Face& face : m_faces) {
-        for (std::size_t i = 0; i < face.size(); i++) {
-            // draw line from point i to i + 1
-            int a_index = face[i][0];
-            int b_index = face[(i+1) % face.size()][0];
-            double ax = m_vertices[a_index][0], ay = m_vertices[a_index][1];
-            double bx = m_vertices[b_index][0], by = m_vertices[b_index][1];
-
-            auto [ax_pixel, ay_pixel] = project(ax, ay, framebuffer.height(), framebuffer.width());
-            auto [bx_pixel, by_pixel] = project(bx, by, framebuffer.height(), framebuffer.width());
-            drawLine(ax_pixel, ay_pixel, bx_pixel, by_pixel, framebuffer, lineColor);
-            framebuffer.set(ax_pixel, ay_pixel, pointColor);
-            framebuffer.set(bx_pixel, by_pixel, pointColor);
+        TGAColor color;
+        for (int i = 0; i < 3; i++) color[i] = std::rand() % 255;
+        for (std::size_t i = 0; i < face.size()-2; i++) {
+            int a = face[i][0], b = face[i+1][0], c = face[i+2][0];
+            auto [ax, ay, az] = project(m_vertices[a][0], m_vertices[a][1], m_vertices[a][2], framebuffer.height(), framebuffer.width());
+            auto [bx, by, bz] = project(m_vertices[b][0], m_vertices[b][1], m_vertices[b][2], framebuffer.height(), framebuffer.width());
+            auto [cx, cy, cz] = project(m_vertices[c][0], m_vertices[c][1], m_vertices[c][2], framebuffer.height(), framebuffer.width());
+            drawTriangle(ax, ay, az, bx, by, bz, cx, cy, cz, framebuffer, zbuffer, color);
         }
     }
 }
 
-void Model::render(TGAImage& framebuffer) const {
-    for (const Face& face : m_faces) {
-        if (face.size() == 3) {
-            int a = face[0][0], b = face[1][0], c = face[2][0];
-            auto [ax, ay] = project(m_vertices[a][0], m_vertices[a][1], framebuffer.height(), framebuffer.width());
-            auto [bx, by] = project(m_vertices[b][0], m_vertices[b][1], framebuffer.height(), framebuffer.width());
-            auto [cx, cy] = project(m_vertices[c][0], m_vertices[c][1], framebuffer.height(), framebuffer.width());
-            TGAColor color;
-            for (int i = 0; i < 3; i++) color[i] = std::rand() % 255;
-            drawTriangle(ax, ay, bx, by, cx, cy, framebuffer, color);
-        }
-    }
-}
-
-Pixel project(double x, double y, int height, int width) {
-    return Pixel((x + 1.0) * width / 2.0, (y + 1.0) * height / 2.0);
+Pixel project(double x, double y, double z, int height, int width) {
+    return {
+        std::round((x + 1.0) *  width / 2.0),
+        std::round((y + 1.0) * height / 2.0),
+        std::round((z + 1.0) *  255.0 / 2.0)
+    };
 }
 
 void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
@@ -261,22 +245,28 @@ double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy) {
     return 0.5 * ((by - ay) * (bx + ax) + (cy - by) * (cx + bx) + (ay - cy) * (ax + cx));
 }
 
-void drawTriangle(int ax, int ay, int bx, int by, int cx, int cy, TGAImage& framebuffer, TGAColor color) {
+void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color) {
     int bbminx = std::min(ax, std::min(bx, cx));
     int bbminy = std::min(ay, std::min(by, cy));
     int bbmaxx = std::max(ax, std::max(bx, cx));
     int bbmaxy = std::max(ay, std::max(by, cy));
     double totalArea = signedTriangleArea(ax, ay, bx, by, cx, cy);
-    if (totalArea < 1.0) return;
+    if (totalArea < 1.0) return;    // discard triangles that are facing back (< 0) and area smaller than a pixel (< 1)
+    double inverseTotalArea = 1.0 / totalArea;
 
 #pragma omp parallel for
     for (int x = bbminx; x <= bbmaxx; x++) {
         for (int y = bbminy; y <= bbmaxy; y++) {
-            double alpha = signedTriangleArea(x, y, bx, by, cx, cy) / totalArea;
-            double beta  = signedTriangleArea(x, y, cx, cy, ax, ay) / totalArea;
-            double gamma = signedTriangleArea(x, y, ax, ay, bx, by) / totalArea;
-            if (alpha >= 0 && beta >= 0 && gamma >= 0)
-                framebuffer.set(x, y, color);
+            double alpha = signedTriangleArea(x, y, bx, by, cx, cy) * inverseTotalArea;
+            double beta  = signedTriangleArea(x, y, cx, cy, ax, ay) * inverseTotalArea;
+            double gamma = signedTriangleArea(x, y, ax, ay, bx, by) * inverseTotalArea;
+            if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+                unsigned char z = static_cast<unsigned char>(alpha * az + beta * bz + gamma * cz);
+                if (z > zbuffer.get(x, y)[0]) {
+                    zbuffer.set(x, y, {z});
+                    framebuffer.set(x, y, color);
+                }
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 # Any image files
 *.tga
 
+# Caches or VSCode directories
+/.vscode/
+
 # Any Wavefront files (or anything inside obj directory)
 *.obj
 /obj/

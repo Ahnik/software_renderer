@@ -20,16 +20,18 @@ int main(int argc, char** argv) {
         return 1;
     }
     TGAImage framebuffer(width, height, TGAImage::RGB);
+    TGAImage     zbuffer(width, height, TGAImage::GRAYSCALE);
 
     try {
         std::filesystem::path filePath(argv[1]);
         Model model(filePath);
-        model.render(framebuffer);
+        model.render(framebuffer, zbuffer);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << '\n';
         return 1;
     }
 
     framebuffer.write_tga_file("framebuffer.tga");
+    zbuffer.write_tga_file("zbuffer.tga");
     return 0;
 }
