@@ -193,25 +193,16 @@ ParseError Model::parseParameter(std::string_view line) {
 }
 
 void Model::render(TGAImage& framebuffer, TGAImage& zbuffer) const {
-    for (const Face& face : m_faces) {
+    for (std::size_t i = 0; i < m_faces.size(); i++) {
         TGAColor color;
-        for (int i = 0; i < 3; i++) color[i] = std::rand() % 255;
-        for (std::size_t i = 0; i < face.size()-2; i++) {
-            int a = face[i][0], b = face[i+1][0], c = face[i+2][0];
-            auto [ax, ay, az] = project(m_vertices[a][0], m_vertices[a][1], m_vertices[a][2], framebuffer.height(), framebuffer.width());
-            auto [bx, by, bz] = project(m_vertices[b][0], m_vertices[b][1], m_vertices[b][2], framebuffer.height(), framebuffer.width());
-            auto [cx, cy, cz] = project(m_vertices[c][0], m_vertices[c][1], m_vertices[c][2], framebuffer.height(), framebuffer.width());
+        for (int c = 0; c < 3; c++) color[c] = std::rand() % 255;
+        for (std::size_t j = 0; j < m_faces[i].size()-2; j++) {
+            auto [ax, ay, az] = project(getVertex(i, j)  , framebuffer.height(), framebuffer.width());
+            auto [bx, by, bz] = project(getVertex(i, j+1), framebuffer.height(), framebuffer.width());
+            auto [cx, cy, cz] = project(getVertex(i, j+2), framebuffer.height(), framebuffer.width());
             drawTriangle(ax, ay, az, bx, by, bz, cx, cy, cz, framebuffer, zbuffer, color);
         }
     }
-}
-
-Pixel project(double x, double y, double z, int height, int width) {
-    return {
-        std::round((x + 1.0) *  width / 2.0),
-        std::round((y + 1.0) * height / 2.0),
-        std::round((z + 1.0) *  255.0 / 2.0)
-    };
 }
 
 void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {

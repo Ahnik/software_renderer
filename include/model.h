@@ -7,6 +7,7 @@
 #include <string_view>
 #include <utility>
 #include <filesystem>
+#include <cmath>
 
 using Vertex    = std::array<double, 3>;
 using Texture   = std::array<double, 3>;
@@ -30,13 +31,23 @@ const char* parseErrorMessage(ParseError error);
 void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color);
 double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy);
 void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color);
-Pixel project(double x, double y, double z, int height, int width);
+
+inline Pixel project(const Vertex& vertex, int height, int width) {
+    return {
+        std::round((vertex[0] + 1.0) *  width / 2.0),
+        std::round((vertex[1] + 1.0) * height / 2.0),
+        std::round((vertex[2] + 1.0) *  255.0 / 2.0)
+    };
+}
 
 class Model {
 public:
     Model(std::filesystem::path filePath);
     // void renderWireframe(TGAImage& framebuffer, TGAColor lineColor, TGAColor pointColor) const;
     void render(TGAImage& framebuffer, TGAImage& zbuffer) const;
+    Vertex getVertex(int faceIndex, int index) const {
+        return m_vertices[m_faces[faceIndex][index][0]];
+    }
 
 private:
     // Private member functions
