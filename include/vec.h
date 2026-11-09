@@ -8,8 +8,8 @@
 template<std::size_t N>
 struct Vec {
     std::array<double, N> data{};
-    double& operator[](std::size_t i)       { assert(i < N); return data[i]; }
-    double  operator[](std::size_t i) const { assert(i < N); return data[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < N); return data[i]; }
+    constexpr double  operator[](std::size_t i) const { assert(i < N); return data[i]; }
 };
 
 template<std::size_t N>
@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& out, const Vec<N>& v) {
 }
 
 template<std::size_t N>
-Vec<N> operator+(const Vec<N>& a, const Vec<N>& b) {
+constexpr Vec<N> operator+(const Vec<N>& a, const Vec<N>& b) {
     Vec<N> result;
     for (std::size_t i = 0; i < N; i++) {
         result[i] = a[i] + b[i];
@@ -29,7 +29,7 @@ Vec<N> operator+(const Vec<N>& a, const Vec<N>& b) {
 }
 
 template<std::size_t N>
-Vec<N> operator-(const Vec<N>& a, const Vec<N>& b) {
+constexpr Vec<N> operator-(const Vec<N>& a, const Vec<N>& b) {
     Vec<N> result;
     for (std::size_t i = 0; i < N; i++) {
         result[i] = a[i] - b[i];
@@ -37,25 +37,34 @@ Vec<N> operator-(const Vec<N>& a, const Vec<N>& b) {
     return result;
 }
 
+template<std::size_t N>
+constexpr double dot(const Vec<N>& a, const Vec<N>& b) {
+    double sum = 0.0;
+    for (std::size_t i = 0; i < N; i++) {
+        sum += a[i] * b[i];
+    }
+    return sum;
+}
+
 template<>
 struct Vec<2> {
     double x = 0, y = 0;
-    double& operator[](std::size_t i)       { assert(i < 2); return (&x)[i]; }
-    double  operator[](std::size_t i) const { assert(i < 2); return (&x)[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < 2); return (&x)[i]; }
+    constexpr double  operator[](std::size_t i) const { assert(i < 2); return (&x)[i]; }
 };
 
 template<>
 struct Vec<3> {
     double x = 0, y = 0, z = 0;
-    double& operator[](std::size_t i)       { assert(i < 3); return (&x)[i]; }
-    double  operator[](std::size_t i) const { assert(i < 3); return (&x)[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < 3); return (&x)[i]; }
+    constexpr double  operator[](std::size_t i) const { assert(i < 3); return (&x)[i]; }
 };
 
 template<>
 struct Vec<4> {
     double x = 0, y = 0, z = 0, w = 0;
-    double& operator[](std::size_t i)       { assert(i < 4); return (&x)[i]; }
-    double  operator[](std::size_t i) const { assert(i < 4); return (&x)[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < 4); return (&x)[i]; }
+    constexpr double  operator[](std::size_t i) const { assert(i < 4); return (&x)[i]; }
 };
 
 using Vec2 = Vec<2>;
