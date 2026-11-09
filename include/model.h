@@ -5,16 +5,11 @@
 #include "vec.h"
 #include <vector>
 #include <string_view>
-#include <utility>
 #include <filesystem>
 #include <cmath>
 
-using Vertex    = vec3;
-using Texture   = vec3;
-using Parameter = vec3;
-using Normal    = vec3;
-using Face      = std::vector<vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
-using Pixel     = std::tuple<int, int, int>;
+using Face  = std::vector<Vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
+using Pixel = std::tuple<int, int, int>;
 
 enum class ParseError {
     Ok = 0,
@@ -31,7 +26,7 @@ void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor co
 double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy);
 void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color);
 
-inline Pixel project(const Vertex& vertex, int height, int width) {
+inline Pixel project(const Vec3& vertex, int height, int width) {
     return {
         std::round((vertex.x + 1.0) *  width / 2.0),
         std::round((vertex.y + 1.0) * height / 2.0),
@@ -41,10 +36,10 @@ inline Pixel project(const Vertex& vertex, int height, int width) {
 
 class Model {
 public:
-    Model(std::filesystem::path filePath);
-    // void renderWireframe(TGAImage& framebuffer, TGAColor lineColor, TGAColor pointColor) const;
+    // The constructor (throws std::runtime exception)
+    Model(std::filesystem::path filePath) noexcept(false);
     void render(TGAImage& framebuffer, TGAImage& zbuffer) const;
-    Vertex getVertex(int faceIndex, int index) const {
+    Vec3 getVertex(int faceIndex, int index) const {
         return m_vertices[m_faces[faceIndex][index][0]];
     }
 
@@ -57,11 +52,11 @@ private:
     ParseError parseParameter(std::string_view line);
 
     // Member variables
-    std::vector<Face>      m_faces      {};
-    std::vector<Vertex>    m_vertices   {};
-    std::vector<Normal>    m_normals    {};
-    std::vector<Texture>   m_textures   {};
-    std::vector<Parameter> m_parameters {};
+    std::vector<Face> m_faces      {};
+    std::vector<Vec3> m_vertices   {};
+    std::vector<Vec3> m_normals    {};
+    std::vector<Vec3> m_textures   {};
+    std::vector<Vec3> m_parameters {};
 };
 
 #endif

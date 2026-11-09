@@ -44,16 +44,14 @@ Model::Model(std::filesystem::path filePath) {
         else
             continue;
 
-        if (error != ParseError::Ok) {
+        if (error != ParseError::Ok)
             throw std::runtime_error(parseErrorMessage(error));
-            break;
-        }
     }
 }
 
 ParseError Model::parseVertex(std::string_view line) {
     line.remove_prefix(2);
-    Vertex vertex {0.0, 0.0, 0.0};
+    Vec3 vertex {0.0, 0.0, 0.0};
     double w {1.0};
     for (int i = 0; i < 4; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
@@ -82,7 +80,7 @@ ParseError Model::parseFace(std::string_view line) {
     Face face {};
     int vertexCount = 0;
     while (!line.empty()) {
-        vec3 indices {0, 0, 0};
+        Vec3 indices {0, 0, 0};
         // remove whitespaces
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos)
@@ -127,7 +125,7 @@ ParseError Model::parseFace(std::string_view line) {
 
 ParseError Model::parseNormal(std::string_view line) {
     line.remove_prefix(3);
-    Normal normal {0.0, 0.0, 0.0};
+    Vec3 normal {0.0, 0.0, 0.0};
     for (int i = 0; i < 3; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos)
@@ -148,7 +146,7 @@ ParseError Model::parseNormal(std::string_view line) {
 
 ParseError Model::parseTexture(std::string_view line) {
     line.remove_prefix(3);
-    Texture texture {0.0, 0.0, 0.0};
+    Vec3 texture {0.0, 0.0, 0.0};
     for (int i = 0; i < 3; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos) {
@@ -171,7 +169,7 @@ ParseError Model::parseTexture(std::string_view line) {
 
 ParseError Model::parseParameter(std::string_view line) {
     line.remove_prefix(3);
-    Parameter parameters {0.0, 0.0, 1.0};
+    Vec3 parameters {0.0, 0.0, 1.0};
     for (int i = 0; i < 3; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos) {

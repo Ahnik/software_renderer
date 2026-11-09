@@ -1,6 +1,6 @@
 # Config
-CC		= clang++
-CFLAGS	= -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -O3 -MMD -MP -Iinclude
+CC		= g++
+CFLAGS	= -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -O3 -MMD -MP -fopenmp -Iinclude
 BIN_DIR = bin
 SRC_DIR	= src
 
@@ -33,4 +33,4 @@ build: $(MAIN_BIN)
 # For cleaning up
 clean:
 	rm -rf $(BIN_DIR)
-	rm *.tga
+	rm -f *.tga
