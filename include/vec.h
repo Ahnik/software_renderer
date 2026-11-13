@@ -46,25 +46,27 @@ constexpr double dot(const Vec<N>& a, const Vec<N>& b) {
     return sum;
 }
 
+
+
 template<>
 struct Vec<2> {
     double x = 0, y = 0;
-    constexpr double& operator[](std::size_t i)       { assert(i < 2); return (&x)[i]; }
-    constexpr double  operator[](std::size_t i) const { assert(i < 2); return (&x)[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < 2); return i ? y : x; }
+    constexpr double  operator[](std::size_t i) const { assert(i < 2); return i ? y : x; }
 };
 
 template<>
 struct Vec<3> {
     double x = 0, y = 0, z = 0;
-    constexpr double& operator[](std::size_t i)       { assert(i < 3); return (&x)[i]; }
-    constexpr double  operator[](std::size_t i) const { assert(i < 3); return (&x)[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < 3); return i ? (i == 1 ? y : z) : x; }
+    constexpr double  operator[](std::size_t i) const { assert(i < 3); return i ? (i == 1 ? y : z) : x; }
 };
 
 template<>
 struct Vec<4> {
     double x = 0, y = 0, z = 0, w = 0;
-    constexpr double& operator[](std::size_t i)       { assert(i < 4); return (&x)[i]; }
-    constexpr double  operator[](std::size_t i) const { assert(i < 4); return (&x)[i]; }
+    constexpr double& operator[](std::size_t i)       { assert(i < 4); return i ? (i == 1 ? y : (i == 2) ? z : w) : x; }
+    constexpr double  operator[](std::size_t i) const { assert(i < 4); return i ? (i == 1 ? y : (i == 2) ? z : w) : x; }
 };
 
 using Vec2 = Vec<2>;
