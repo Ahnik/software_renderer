@@ -4,62 +4,37 @@
 #include "tgaimage.h"
 #include "vec.h"
 #include "mat.h"
+#include "utils.h"
 #include <vector>
 #include <string_view>
 #include <filesystem>
-#include <numbers>
 #include <cmath>
-#include <cassert>
 
 using Face  = std::vector<Vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
-using Pixel = std::tuple<int, int, int>;
-
-enum class ParseError {
-    Ok = 0,
-    UnexpectedEndOfLine,
-    InvalidDouble,
-    OutOfRange,
-    UnexpectedCharacter,
-    MalformedFace,
-};
-
-// Global functions
-const char* parseErrorMessage(ParseError error);
-void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color);
-double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy);
-void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color);
-
-constexpr Pixel project(const Vec3& vertex, int height, int width) {
-    return {
-        std::round((vertex.x + 1.0) *  width / 2.0),
-        std::round((vertex.y + 1.0) * height / 2.0),
-        std::round((vertex.z + 1.0) *  255.0 / 2.0)
-    };
-}
-
-constexpr Vec3 rotate(const Vec3& vertex, double degrees) {
-    double radians = std::numbers::pi * degrees / 180.0;
-    Mat3 Ry{};
-    Ry[0] = {std::cos(radians), 0, std::sin(radians)};
-    Ry[1] = {0, 1, 0};
-    Ry[2] = {-std::sin(radians), 0, std::cos(radians)};
-    return Ry * vertex;
-}
-
-constexpr Vec3 persp(const Vec3& vertex, double camera) {
-    assert(camera != 0.0);
-    double scale = 1.0 - (vertex.z / camera);
-    assert(scale != 0.0);
-    return vertex / scale;
-}
 
 class Model {
 public:
     // The constructor (throws std::runtime exception)
     Model(std::filesystem::path filePath) noexcept(false);
-    void render(TGAImage& framebuffer, TGAImage& zbuffer) const;
+
+    // helper function to get the vertex of a face
     Vec3 getVertex(int faceIndex, int index) const {
         return m_vertices[m_faces[faceIndex][index][0]];
+    }
+
+    // generic function to render the image
+    template<std::size_t R, std::size_t C>
+    void render(TGAImage& framebuffer, TGAImage& debugbuffer, Mat<R, C>& zbuffer) const {
+        for (std::size_t i = 0; i < m_faces.size(); i++) {
+            TGAColor color;
+            for (int c = 0; c < 3; c++) color[c] = std::rand() % 255;
+            for (std::size_t j = 0; j < m_faces[i].size()-2; j++) {
+                auto [ax, ay, az] = project(persp(rotate(getVertex(i, j)  , 30), 3), framebuffer.height(), framebuffer.width());
+                auto [bx, by, bz] = project(persp(rotate(getVertex(i, j+1), 30), 3), framebuffer.height(), framebuffer.width());
+                auto [cx, cy, cz] = project(persp(rotate(getVertex(i, j+2), 30), 3), framebuffer.height(), framebuffer.width());
+                drawTriangle(ax, ay, az, bx, by, bz, cx, cy, cz, framebuffer, debugbuffer, zbuffer, color);
+            }
+        }
     }
 
 private:

@@ -2,7 +2,7 @@
 #define VEC_H
 
 #include <cassert>
-#include <iostream>
+#include <ostream>
 #include <array>
 
 template<typename T>

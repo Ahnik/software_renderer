@@ -2,7 +2,6 @@
 #define MAT_H
 
 #include <cassert>
-#include <iostream>
 #include <array>
 #include "vec.h"
 

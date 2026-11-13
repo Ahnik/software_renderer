@@ -1,4 +1,5 @@
 #include "model.h"
+#include "mat.h"
 #include <fstream>
 #include <stdexcept>
 #include <filesystem>
@@ -7,18 +8,6 @@
 #include <cmath>
 
 constexpr std::string_view whitespaces = " \t\r";
-
-const char* parseErrorMessage(ParseError error) {
-    switch (error) {
-        case ParseError::Ok:                  return "Success";
-        case ParseError::UnexpectedEndOfLine: return "Unexpected end of line while parsing";
-        case ParseError::InvalidDouble:       return "Invalid floating-point number format";
-        case ParseError::OutOfRange:          return "Value is out of range";
-        case ParseError::UnexpectedCharacter: return "Encountered unexpected character";
-        case ParseError::MalformedFace:       return "Face does not have enought vertices";
-    }
-    return "Unknown error";
-}
 
 Model::Model(std::filesystem::path filePath) {
     std::ifstream file(filePath);
@@ -188,75 +177,4 @@ ParseError Model::parseParameter(std::string_view line) {
     }
     m_parameters.emplace_back(parameters);
     return ParseError::Ok;
-}
-
-void Model::render(TGAImage& framebuffer, TGAImage& zbuffer) const {
-    for (std::size_t i = 0; i < m_faces.size(); i++) {
-        TGAColor color;
-        for (int c = 0; c < 3; c++) color[c] = std::rand() % 255;
-        for (std::size_t j = 0; j < m_faces[i].size()-2; j++) {
-            auto [ax, ay, az] = project(persp(rotate(getVertex(i, j)  , 30), 3), framebuffer.height(), framebuffer.width());
-            auto [bx, by, bz] = project(persp(rotate(getVertex(i, j+1), 30), 3), framebuffer.height(), framebuffer.width());
-            auto [cx, cy, cz] = project(persp(rotate(getVertex(i, j+2), 30), 3), framebuffer.height(), framebuffer.width());
-            drawTriangle(ax, ay, az, bx, by, bz, cx, cy, cz, framebuffer, zbuffer, color);
-        }
-    }
-}
-
-void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor color) {
-    bool steep = std::abs(bx - ax) < std::abs(by - ay);
-    if (steep) {
-        std::swap(ax, ay);
-        std::swap(bx, by);
-    }
-    if (ax > bx) {
-        std::swap(ax, bx);
-        std::swap(ay, by);
-    }
-    const int dx = bx - ax;
-    const int dy = std::abs(by - ay);
-    const int increment_y = (by >= ay) ? 1 : -1;
-
-    int error = 2 * dy - dx;
-    int y = ay;
-    for (int x = ax; x <= bx; x++) {
-        (steep) ? framebuffer.set(y, x, color) : framebuffer.set(x, y, color);
-
-        if (error > 0) {
-            y += increment_y;
-            error += 2 * (dy - dx);
-        } else
-            error += 2 * dy;
-    }
-}
-
-double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy) {
-    return 0.5 * ((by - ay) * (bx + ax) + (cy - by) * (cx + bx) + (ay - cy) * (ax + cx));
-}
-
-void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color) {
-    int bbminx = std::min(ax, std::min(bx, cx));
-    int bbminy = std::min(ay, std::min(by, cy));
-    int bbmaxx = std::max(ax, std::max(bx, cx));
-    int bbmaxy = std::max(ay, std::max(by, cy));
-    double totalArea = signedTriangleArea(ax, ay, bx, by, cx, cy);
-    if (totalArea < 1.0) return;    // discard triangles that are facing back (< 0) and area smaller than a pixel (< 1)
-    double inverseTotalArea = 1.0 / totalArea;
-
-#pragma omp parallel for
-    for (int x = bbminx; x <= bbmaxx; x++) {
-        for (int y = bbminy; y <= bbmaxy; y++) {
-            double alpha = signedTriangleArea(x, y, bx, by, cx, cy) * inverseTotalArea;
-            double beta  = signedTriangleArea(x, y, cx, cy, ax, ay) * inverseTotalArea;
-            double gamma = signedTriangleArea(x, y, ax, ay, bx, by) * inverseTotalArea;
-            if (alpha >= 0 && beta >= 0 && gamma >= 0) {
-                double a = alpha * az, b = beta * bz, c = gamma * cz;
-                unsigned char z = static_cast<unsigned char>(a + b > 255 - c ? 255 : a + b + c);
-                if (z > zbuffer.get(x, y)[0]) {
-                    zbuffer.set(x, y, {z});
-                    framebuffer.set(x, y, color);
-                }
-            }
-        }
-    }
 }
