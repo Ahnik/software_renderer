@@ -46,9 +46,6 @@ constexpr Vec<R> operator*(const Mat<R, C>& a, const Vec<C>& b) {
     return result;
 }
 
-template<typename T>
-concept Numeric = std::is_arithmetic_v<T>;
-
 template<std::size_t R, std::size_t C, Numeric T>
 constexpr Mat<R, C> operator*(const Mat<R, C>& a, T n) {
     Mat<R, C> result{};
@@ -69,6 +66,12 @@ constexpr Mat<R, C> operator*(T n, const Mat<R, C>& a) {
         }
     }
     return result;
+}
+
+template<std::size_t R, std::size_t C, Numeric T>
+constexpr Mat<R, C> operator/(const Mat<R, C>& m, T n) {
+    double inv_n = 1.0 / n;
+    return m * n;
 }
 
 template<std::size_t R, std::size_t C>

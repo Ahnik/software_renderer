@@ -195,9 +195,9 @@ void Model::render(TGAImage& framebuffer, TGAImage& zbuffer) const {
         TGAColor color;
         for (int c = 0; c < 3; c++) color[c] = std::rand() % 255;
         for (std::size_t j = 0; j < m_faces[i].size()-2; j++) {
-            auto [ax, ay, az] = project(getVertex(i, j)  , framebuffer.height(), framebuffer.width());
-            auto [bx, by, bz] = project(getVertex(i, j+1), framebuffer.height(), framebuffer.width());
-            auto [cx, cy, cz] = project(getVertex(i, j+2), framebuffer.height(), framebuffer.width());
+            auto [ax, ay, az] = project(persp(rotate(getVertex(i, j)  , 30), 3), framebuffer.height(), framebuffer.width());
+            auto [bx, by, bz] = project(persp(rotate(getVertex(i, j+1), 30), 3), framebuffer.height(), framebuffer.width());
+            auto [cx, cy, cz] = project(persp(rotate(getVertex(i, j+2), 30), 3), framebuffer.height(), framebuffer.width());
             drawTriangle(ax, ay, az, bx, by, bz, cx, cy, cz, framebuffer, zbuffer, color);
         }
     }

@@ -5,6 +5,9 @@
 #include <iostream>
 #include <array>
 
+template<typename T>
+concept Numeric = std::is_arithmetic_v<T>;
+
 template<std::size_t N>
 struct Vec {
     std::array<double, N> data{};
@@ -46,7 +49,27 @@ constexpr double dot(const Vec<N>& a, const Vec<N>& b) {
     return sum;
 }
 
+template<std::size_t N, Numeric T>
+constexpr Vec<N> operator*(const Vec<N>& v, T n) {
+    Vec<N> result{};
+    for (std::size_t i = 0; i < N; i++)
+        result[i] = v[i] * n;
+    return result;
+}
 
+template<std::size_t N, Numeric T>
+constexpr Vec<N> operator*(T n, const Vec<N>& v) {
+    Vec<N> result{};
+    for (std::size_t i = 0; i < N; i++)
+        result[i] = v[i] * n;
+    return result;
+}
+
+template<std::size_t N, Numeric T>
+constexpr Vec<N> operator/(const Vec<N>& v, T n) {
+    double inv_n = 1.0 / n;
+    return v * inv_n;
+}
 
 template<>
 struct Vec<2> {

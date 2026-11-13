@@ -3,9 +3,11 @@
 
 #include "tgaimage.h"
 #include "vec.h"
+#include "mat.h"
 #include <vector>
 #include <string_view>
 #include <filesystem>
+#include <numbers>
 #include <cmath>
 
 using Face  = std::vector<Vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
@@ -26,12 +28,25 @@ void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAColor co
 double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy);
 void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& zbuffer, TGAColor color);
 
-inline Pixel project(const Vec3& vertex, int height, int width) {
+constexpr Pixel project(const Vec3& vertex, int height, int width) {
     return {
         std::round((vertex.x + 1.0) *  width / 2.0),
         std::round((vertex.y + 1.0) * height / 2.0),
         std::round((vertex.z + 1.0) *  255.0 / 2.0)
     };
+}
+
+constexpr Vec3 rotate(const Vec3& vertex, double degrees) {
+    double radians = std::numbers::pi * degrees / 180.0;
+    Mat3 Ry{};
+    Ry[0] = {std::cos(radians), 0, std::sin(radians)};
+    Ry[1] = {0, 1, 0};
+    Ry[2] = {-std::sin(radians), 0, std::cos(radians)};
+    return Ry * vertex;
+}
+
+constexpr Vec3 persp(const Vec3& vertex, double camera) {
+    return vertex / (1.0 - (vertex.z / camera));
 }
 
 class Model {
