@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <numbers>
 #include <cmath>
+#include <cassert>
 
 using Face  = std::vector<Vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
 using Pixel = std::tuple<int, int, int>;
@@ -46,7 +47,10 @@ constexpr Vec3 rotate(const Vec3& vertex, double degrees) {
 }
 
 constexpr Vec3 persp(const Vec3& vertex, double camera) {
-    return vertex / (1.0 - (vertex.z / camera));
+    assert(camera != 0.0);
+    double scale = 1.0 - (vertex.z / camera);
+    assert(scale != 0.0);
+    return vertex / scale;
 }
 
 class Model {

@@ -250,7 +250,8 @@ void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy
             double beta  = signedTriangleArea(x, y, cx, cy, ax, ay) * inverseTotalArea;
             double gamma = signedTriangleArea(x, y, ax, ay, bx, by) * inverseTotalArea;
             if (alpha >= 0 && beta >= 0 && gamma >= 0) {
-                unsigned char z = static_cast<unsigned char>(alpha * az + beta * bz + gamma * cz);
+                double a = alpha * az, b = beta * bz, c = gamma * cz;
+                unsigned char z = static_cast<unsigned char>(a + b > 255 - c ? 255 : a + b + c);
                 if (z > zbuffer.get(x, y)[0]) {
                     zbuffer.set(x, y, {z});
                     framebuffer.set(x, y, color);
