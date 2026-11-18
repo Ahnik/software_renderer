@@ -1,16 +1,17 @@
 # Config
 CC		= g++
-CFLAGS	= -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -O3 -MMD -MP -fopenmp -Iinclude
+CFLAGS	= -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -MMD -MP -fopenmp -Iinclude -O3
 BIN_DIR = bin
 SRC_DIR	= src
 
 # Core source files
 TGAIMAGE = $(SRC_DIR)/tgaimage.cpp
 MODEL	 = $(SRC_DIR)/model.cpp
+GL		 = $(SRC_DIR)/gl.cpp
 MAIN	 = $(SRC_DIR)/main.cpp
 
 # Sources
-MAIN_SRC = $(TGAIMAGE) $(MODEL) $(MAIN)
+MAIN_SRC = $(TGAIMAGE) $(MODEL) $(GL) $(MAIN)
 
 # Binary files
 MAIN_BIN = $(BIN_DIR)/renderer
