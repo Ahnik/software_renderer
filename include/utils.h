@@ -7,6 +7,9 @@
 #include <cmath>
 #include <cassert>
 #include <numbers>
+#include <vector>
+#include <array>
+#include <algorithm>
 
 using Pixel = std::tuple<int, int, int>;
 
@@ -59,8 +62,8 @@ inline void drawLine(int ax, int ay, int bx, int by, TGAImage& framebuffer, TGAC
     }
 }
 
-constexpr double signedTriangleArea(int ax, int ay, int bx, int by, int cx, int cy) {
-    return 0.5 * ((by - ay) * (bx + ax) + (cy - by) * (cx + bx) + (ay - cy) * (ax + cx));
+constexpr double signedTriangleArea(const Vec2& a, const Vec2& b, const Vec2& c) {
+    return 0.5 * ((b.y - a.y) * (b.x + a.x) + (c.y - b.y) * (c.x + b.x) + (a.y - c.y) * (a.x + c.x));
 }
 
 constexpr Pixel project(const Vec3& vertex, int height, int width) {
@@ -89,33 +92,34 @@ constexpr Vec3 persp(const Vec3& vertex, double camera) {
 }
 
 // Generic functions
-template<std::size_t R, std::size_t C>
-void drawTriangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage& framebuffer, TGAImage& debugbuffer, Mat<R, C>& zbuffer, TGAColor color) {
-    int bbminx = std::max(0, std::min(ax, std::min(bx, cx)));
-    int bbminy = std::max(0, std::min(ay, std::min(by, cy)));
-    int bbmaxx = std::min(static_cast<int>(C-1), std::max(ax, std::max(bx, cx)));
-    int bbmaxy = std::min(static_cast<int>(R-1), std::max(ay, std::max(by, cy)));
-    double totalArea = signedTriangleArea(ax, ay, bx, by, cx, cy);
-    if (totalArea < 1.0) return;    // discard triangles that are facing back (< 0) and area smaller than a pixel (< 1)
-    double inverseTotalArea = 1.0 / totalArea;
+// template<std::size_t R, std::size_t C>
+// void drawTriangle(const std::array<Vec2, 3>& triangle, TGAImage& framebuffer, std::vector<double>& zbuffer, TGAColor color) {
+//     // int bbminx = std::max(0, std::min(ax, std::min(bx, cx)));
+//     // int bbminy = std::max(0, std::min(ay, std::min(by, cy)));
+//     // int bbmaxx = std::min(static_cast<int>(C-1), std::max(ax, std::max(bx, cx)));
+//     // int bbmaxy = std::min(static_cast<int>(R-1), std::max(ay, std::max(by, cy)));
+//     // double totalArea = signedTriangleArea(ax, ay, bx, by, cx, cy);
+//     auto [bbminx, bbmaxx] = std::minmax(triangle[0].x, triangle[1].x, triangle[2].x);
+//     auto [bbminy, bbmaxy] = std::minmax(triangle[0].y, triangle[1].y, triangle[2].y);
+//     double totalArea = signedTriangleArea(triangle[0], triangle[1], triangle[2]);
+//     if (totalArea < 1.0) return;    // discard triangles that are facing back (< 0) and area smaller than a pixel (< 1)
+//     double inverseTotalArea = 1.0 / totalArea;
 
-#pragma omp parallel for
-    for (int x = bbminx; x <= bbmaxx; x++) {
-        for (int y = bbminy; y <= bbmaxy; y++) {
-            double alpha = signedTriangleArea(x, y, bx, by, cx, cy) * inverseTotalArea;
-            double beta  = signedTriangleArea(x, y, cx, cy, ax, ay) * inverseTotalArea;
-            double gamma = signedTriangleArea(x, y, ax, ay, bx, by) * inverseTotalArea;
-            if (alpha >= 0 && beta >= 0 && gamma >= 0) {
-                double z = alpha * az + beta * bz + gamma * cz;
-                if (z > zbuffer[y][x]) {
-                    zbuffer[y][x] = z;
-                    framebuffer.set(x, y, color);
-                    if (z > 255.0 || z < 0.0) z = 255.0;
-                    debugbuffer.set(x, y, {static_cast<unsigned char>(z)});
-                }
-            }
-        }
-    }
-}
+// #pragma omp parallel for
+//     for (int x = std::max(0, bbminx); x <= std::min(bbmaxx, framebuffer.width()-1); x++) {
+//         for (int y = std::max(0, bbminy); y <= std::min(bbmaxy, framebuffer.height()-1); y++) {
+//             double alpha = signedTriangleArea({x, y}, triangle[1], triangle[2]) * inverseTotalArea;
+//             double beta  = signedTriangleArea({x, y}, triangle[2], triangle[0]) * inverseTotalArea;
+//             double gamma = signedTriangleArea({x, y}, triangle[0], triangle[1]) * inverseTotalArea;
+//             if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+//                 double z = alpha * az + beta * bz + gamma * cz;
+//                 if (z > zbuffer[y*width + x]) {
+//                     zbuffer[y*width + x] = z;
+//                     framebuffer.set(x, y, color);
+//                 }
+//             }
+//         }
+//     }
+// }
 
 #endif

@@ -70,7 +70,7 @@ constexpr Mat<R, C> operator*(T n, const Mat<R, C>& a) {
 template<std::size_t R, std::size_t C, Numeric T>
 constexpr Mat<R, C> operator/(const Mat<R, C>& m, T n) {
     double inv_n = 1.0 / n;
-    return m * n;
+    return m * inv_n;
 }
 
 template<std::size_t R, std::size_t C>
@@ -156,7 +156,7 @@ constexpr double determinant(const Mat3& m) {
 
 constexpr Mat3 inverse(const Mat3& m) {
     Mat3 adj = adjoint(m);
-    double det = m[0][0] * adj[0][0] + m[0][1] * adj[0][1] + m[0][2] * adj[0][2];
+    double det = m[0][0] * adj[0][0] + m[0][1] * adj[1][0] + m[0][2] * adj[2][0];
     assert(det != 0.0);
 
     double inv_det = 1.0 / det;

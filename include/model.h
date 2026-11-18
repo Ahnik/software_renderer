@@ -9,6 +9,7 @@
 #include <string_view>
 #include <filesystem>
 #include <cmath>
+#include <array>
 
 using Face  = std::vector<Vec3>;  // For each vertex, we have <vertex index, texture coordinate, normal index>
 
@@ -22,35 +23,33 @@ public:
         return m_vertices[m_faces[faceIndex][index][0]];
     }
 
-    // generic function to render the image
-    template<std::size_t R, std::size_t C>
-    void render(TGAImage& framebuffer, TGAImage& debugbuffer, Mat<R, C>& zbuffer) const {
-        for (std::size_t i = 0; i < m_faces.size(); i++) {
-            TGAColor color;
-            for (int c = 0; c < 3; c++) color[c] = std::rand() % 255;
-            for (std::size_t j = 0; j < m_faces[i].size()-2; j++) {
-                auto [ax, ay, az] = project(persp(rotate(getVertex(i, j)  , 30), 3), framebuffer.height(), framebuffer.width());
-                auto [bx, by, bz] = project(persp(rotate(getVertex(i, j+1), 30), 3), framebuffer.height(), framebuffer.width());
-                auto [cx, cy, cz] = project(persp(rotate(getVertex(i, j+2), 30), 3), framebuffer.height(), framebuffer.width());
-                drawTriangle(ax, ay, az, bx, by, bz, cx, cy, cz, framebuffer, debugbuffer, zbuffer, color);
-            }
-        }
-    }
+    void render(TGAImage& framebuffer, std::vector<double>& zbuffer);
+    void rasterize(std::array<Vec4, 3>& clip, TGAImage& framebuffer, std::vector<double>& zbuffer, const TGAColor& color) const;
 
 private:
-    // Private member functions
+    // Private member functions to parse model file
     ParseError parseVertex(std::string_view line);
     ParseError parseFace(std::string_view line);
     ParseError parseNormal(std::string_view line);
     ParseError parseTexture(std::string_view line);
     ParseError parseParameter(std::string_view line);
 
-    // Member variables
+    // Functions to populate transformation matrices
+    void viewport(const int x, const int y, const int w, const int h);
+    void perspective(const double camera);
+    void lookat(const Vec3& eye, const Vec3& center, const Vec3& up);
+
+    // Storing the components of the model
     std::vector<Face> m_faces      {};
     std::vector<Vec3> m_vertices   {};
     std::vector<Vec3> m_normals    {};
     std::vector<Vec3> m_textures   {};
     std::vector<Vec3> m_parameters {};
+
+    // Transformation matrices
+    Mat4 m_viewport    {};
+    Mat4 m_modelview   {};
+    Mat4 m_perspective {};
 };
 
 #endif

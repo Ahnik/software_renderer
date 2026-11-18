@@ -4,6 +4,7 @@
 #include <cassert>
 #include <ostream>
 #include <array>
+#include <cmath>
 
 template<typename T>
 concept Numeric = std::is_arithmetic_v<T>;
@@ -71,6 +72,16 @@ constexpr Vec<N> operator/(const Vec<N>& v, T n) {
     return v * inv_n;
 }
 
+template<std::size_t N>
+constexpr double modulus(const Vec<N>& v) {
+    return std::sqrt(dot(v, v));
+}
+
+template<std::size_t N>
+constexpr Vec<N> normalized(const Vec<N>& v) {
+    return v / modulus(v);
+}
+
 template<>
 struct Vec<2> {
     double x = 0, y = 0;
@@ -95,5 +106,13 @@ struct Vec<4> {
 using Vec2 = Vec<2>;
 using Vec3 = Vec<3>;
 using Vec4 = Vec<4>;
+
+constexpr Vec3 cross(const Vec3& a, const Vec3& b) {
+    Vec3 result{};
+    result.x = a.y * b.z - b.y * a.z;
+    result.y = a.z * b.x - b.z * a.x;
+    result.z = a.x * b.y - b.x * a.y;
+    return result;
+}
 
 #endif
