@@ -71,17 +71,3 @@ void gl::Context::rasterize(Triangle& clip, const IShader& shader, TGAImage& fra
         }
     }
 }
-
-// void gl::Context::draw(const Model& model, const IShader& shader, TGAImage& framebuffer) {
-//     auto composedTransfomation = m_perspective * m_modelview;
-
-//     for (std::size_t i = 0; i < model.getFaceCount(); i++) {
-//         for (std::size_t j = 0; j < model.getFaceCount()-2; j++) {
-//             Triangle clip{};
-//             clip[0] = composedTransfomation * Vec4(model.getVertex(i, 0).x, model.getVertex(i, 0).y, model.getVertex(i, 0).z, 1.0);
-//             clip[1] = composedTransfomation * Vec4(model.getVertex(i, j+1).x, model.getVertex(i, j+1).y, model.getVertex(i, j+1).z, 1.0);
-//             clip[2] = composedTransfomation * Vec4(model.getVertex(i, j+2).x, model.getVertex(i, j+2).y, model.getVertex(i, j+2).z, 1.0);
-//             rasterize(clip, shader, framebuffer);
-//         }
-//     }
-// }
