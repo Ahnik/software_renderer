@@ -33,6 +33,14 @@ constexpr Vec<N> operator+(const Vec<N>& a, const Vec<N>& b) {
 }
 
 template<std::size_t N>
+constexpr Vec<N> operator-(const Vec<N>& v) {
+    Vec<N> result;
+    for (std::size_t i = 0; i < N; i++)
+        result[i] = -v[i];
+    return result;
+}
+
+template<std::size_t N>
 constexpr Vec<N> operator-(const Vec<N>& a, const Vec<N>& b) {
     Vec<N> result;
     for (std::size_t i = 0; i < N; i++) {

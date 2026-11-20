@@ -16,6 +16,19 @@ constexpr TGAColor yellow = {  0, 200, 255, 255};
 constexpr std::size_t width  = 800;
 constexpr std::size_t height = 800;
 
+template<std::integral N>
+double binpow(double a, N b) {
+    if (a == 0.0 || a == 1.0) return a;
+    double res = 1;
+    while (b > 0) {
+        if (b & 1)
+            res *= a;
+        a *= a;
+        b >>= 1;
+    }
+    return res;
+}
+
 struct RandomShader : IShader {
     RandomShader(const Model &m, const gl::Context& g) : model(m), gl(g) {}
 
@@ -35,14 +48,16 @@ struct RandomShader : IShader {
 };
 
 struct PhongShader : IShader {
-    PhongShader(const Model& m, const gl::Context& g, const Vec3& c) : model(m), gl(g), camera(c) {}
+    PhongShader(const Model& m, const gl::Context& g, const Vec3& l) : model(m), gl(g) {
+        Vec4 temp = normalized(gl.transformToEye(Vec4(l.x, l.y, l.z, 0.0)));
+        light.x = temp.x, light.y = temp.y, light.z  = temp.z;
+    }
 
-    virtual Vec4 vertex(const int faceIndex, const int index) {
-        Vec3 v = model.getVertex(faceIndex, index);
+    virtual Vec4 vertex(const int faceIndex, const int vertIndex, const int triIndex) {
+        Vec3 v = model.getVertex(faceIndex, vertIndex);
         Vec4 homogeneous {v.x, v.y, v.z, 1.0};
         Vec4 eye_coordinates = gl.transformToEye(homogeneous);
-        if (index < 3)
-            triangle[index].x = eye_coordinates.x, triangle[index].y = eye_coordinates.y, triangle[index].z = eye_coordinates.z;
+        triangle[triIndex].x = eye_coordinates.x, triangle[triIndex].y = eye_coordinates.y, triangle[triIndex].z = eye_coordinates.z;
         return gl.transfromToClip(eye_coordinates);
     }
 
@@ -50,11 +65,11 @@ struct PhongShader : IShader {
         Vec3 normal = normalized(cross(triangle[1] - triangle[0], triangle[2] - triangle[0]));
         Vec3 reflected = 2 * dot(normal, light) * normal - light;
         Vec3 centroid = (triangle[0] + triangle[1] + triangle[2]) / 3;
-        Vec3 view = camera - centroid;
+        Vec3 view = normalized(-centroid);
         TGAColor fragColor = {255, 255, 255, 255};
         double ambient = 0.3;
         double diff = std::max(0.0, dot(normal, light));
-        double spec = std::pow(std::max(0.0, dot(reflected, view)), 35);
+        double spec = binpow(std::max(0.0, dot(reflected, view)), 36);
         for (int i = 0; i < 3; i++)
             fragColor[i] *= std::min(1.0, ambient + 0.4 * diff + 0.9 * spec);
         return {false, fragColor};
@@ -63,8 +78,8 @@ struct PhongShader : IShader {
     const Model& model;
     const gl::Context& gl;
     TGAColor color {};
-    Vec3 light {-1, 0, 2}, camera {};
-    std::array<Vec3, 3> triangle {};
+    Vec3 light {};                      // direction of light in eye coordinates
+    std::array<Vec3, 3> triangle {};    // Triangle primitive in eye coordinates
 };
 
 int main(int argc, char** argv) {
@@ -75,10 +90,11 @@ int main(int argc, char** argv) {
     TGAImage framebuffer(width, height, TGAImage::RGB, {177, 195, 209, 255});
     CameraContext camera {};
     camera.x = width/16, camera.y = height/16, camera.w = width*7/8, camera.h = width*7/8;
-    camera.eye    = {-1.0, 0.0, 2.0};
+    camera.eye    = {0.0, 0.0, 5.0};
     camera.center = {0.0, 0.0, 0.0};
     camera.up     = {0.0, 1.0, 0.0};
     camera.distance = modulus(camera.eye - camera.center);
+    Vec3 light {1.0, 1.0, 1.0};
 
     gl::Context gl(camera, width, height);
 
@@ -86,15 +102,15 @@ int main(int argc, char** argv) {
         try {
             std::filesystem::path filePath(argv[m]);
             Model model(filePath);
-            PhongShader shader(model, gl, camera.eye);
+            PhongShader shader(model, gl, light);
             for (std::size_t i = 0; i < model.getFaceCount(); i++) {
                 Triangle clip {};
                 for (std::size_t j = 0; j < model.getVertexCount(i)-2; j++) {
-                    clip[0] = shader.vertex(i, 0);
-                    clip[1] = shader.vertex(i, j+1);
-                    clip[2] = shader.vertex(i, j+2);
+                    clip[0] = shader.vertex(i, 0  , 0);
+                    clip[1] = shader.vertex(i, j+1, 1);
+                    clip[2] = shader.vertex(i, j+2, 2);
+                    gl.rasterize(clip, shader, framebuffer);
                 }
-                gl.rasterize(clip, shader, framebuffer);
             }
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << '\n';
