@@ -34,8 +34,13 @@ public:
     Model(std::filesystem::path filePath) noexcept(false);
 
     // helper function to get the vertex of a face
-    Vec3 getVertex(const int faceIndex, const int index) const {
-        return m_vertices[m_faces[faceIndex][index][0]];
+    Vec3 getVertex(const int faceIndex, const int vertIndex) const {
+        return m_vertices[m_faces[faceIndex][vertIndex][0]];
+    }
+
+    // helper function to get the vector normal of a vertex of a face
+    Vec3 getNormal(const int faceIndex, const int vertIndex) const {
+        return m_normals[m_faces[faceIndex][vertIndex][2]];
     }
 
     // getter functions

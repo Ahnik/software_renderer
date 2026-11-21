@@ -50,17 +50,17 @@ void gl::Context::rasterize(Triangle& clip, const IShader& shader, TGAImage& fra
         clip[i] = clip[i] / clip[i].w;
         screen[i] = m_viewport * clip[i];
     }
-    auto [bbminx, bbmaxx] = std::minmax({static_cast<int>(screen[0].x), static_cast<int>(screen[1].x), static_cast<int>(screen[2].x)});
-    auto [bbminy, bbmaxy] = std::minmax({static_cast<int>(screen[0].y), static_cast<int>(screen[1].y), static_cast<int>(screen[2].y)});
+    auto [bbminx, bbmaxx] = std::minmax({screen[0].x, screen[1].x, screen[2].x});
+    auto [bbminy, bbmaxy] = std::minmax({screen[0].y, screen[1].y, screen[2].y});
 
     Mat3 triangle {Vec3(screen[0].x, screen[0].y, 1.0), Vec3(screen[1].x, screen[1].y, 1.0), Vec3(screen[2].x, screen[2].y, 1.0)};
     if (determinant(triangle) < 1.0) return;        // discard triangles that are back facing or smaller than one pixel in size
     Mat3 inverseTranspose = inverse(transpose(triangle));
 
 #pragma omp parallel for
-    for (int x = std::max(0, bbminx); x <= std::min(bbmaxx, framebuffer.width()-1); x++) {
-        for (int y = std::max(0, bbminy); y <= std::min(bbmaxy, framebuffer.height()-1); y++) {
-            Vec3 barycentrics = inverseTranspose * Vec3(static_cast<double>(x), static_cast<double>(y), 1.0);
+    for (int x = std::max<int>(0, bbminx); x <= std::min<int>(bbmaxx, framebuffer.width()-1); x++) {
+        for (int y = std::max<int>(0, bbminy); y <= std::min<int>(bbmaxy, framebuffer.height()-1); y++) {
+            Vec3 barycentrics = inverseTranspose * Vec3(x, y, 1.0);
             if (barycentrics.x < 0 || barycentrics.y < 0 || barycentrics.z < 0) continue;
             double z = dot(barycentrics, {clip[0].z, clip[1].z, clip[2].z});
             if (z <= m_zbuffer[x + y*framebuffer.width()]) continue;

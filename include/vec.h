@@ -90,6 +90,10 @@ constexpr Vec<N> normalized(const Vec<N>& v) {
     return v / modulus(v);
 }
 
+using Vec2 = Vec<2>;
+using Vec3 = Vec<3>;
+using Vec4 = Vec<4>;
+
 template<>
 struct Vec<2> {
     double x = 0, y = 0;
@@ -102,6 +106,7 @@ struct Vec<3> {
     double x = 0, y = 0, z = 0;
     constexpr double& operator[](std::size_t i)       { assert(i < 3); return i ? (i == 1 ? y : z) : x; }
     constexpr double  operator[](std::size_t i) const { assert(i < 3); return i ? (i == 1 ? y : z) : x; }
+    constexpr Vec2 xy() const { return Vec2(x, y); }
 };
 
 template<>
@@ -109,11 +114,8 @@ struct Vec<4> {
     double x = 0, y = 0, z = 0, w = 0;
     constexpr double& operator[](std::size_t i)       { assert(i < 4); return i ? (i == 1 ? y : (i == 2) ? z : w) : x; }
     constexpr double  operator[](std::size_t i) const { assert(i < 4); return i ? (i == 1 ? y : (i == 2) ? z : w) : x; }
+    constexpr Vec3 xyz() const { return Vec3(x, y, z); }
 };
-
-using Vec2 = Vec<2>;
-using Vec3 = Vec<3>;
-using Vec4 = Vec<4>;
 
 constexpr Vec3 cross(const Vec3& a, const Vec3& b) {
     Vec3 result{};

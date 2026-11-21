@@ -26,8 +26,9 @@ namespace gl {
         void init_zbuffer(const int width, const int height);
 
         // Transformation functions
-        Vec4 transformToEye(const Vec4& world) const { return m_modelview * world; }
-        Vec4 transfromToClip(const Vec4& eye)  const { return m_perspective * eye; }
+        Vec4 transformToEye(const Vec4& world)   const { return m_modelview * world; }
+        Vec4 transformToClip(const Vec4& eye)    const { return m_perspective * eye; }
+        Vec4 transformNormal(const Vec4& normal) const { return inverse(transpose(m_modelview)) * normal; }
 
         // Function to rasterize a triangular primitive
         void rasterize(Triangle& clip, const IShader& shader, TGAImage& framebuffer);

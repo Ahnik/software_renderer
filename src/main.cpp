@@ -29,47 +29,32 @@ double binpow(double a, N b) {
     return res;
 }
 
-struct RandomShader : IShader {
-    RandomShader(const Model &m, const gl::Context& g) : model(m), gl(g) {}
-
-    virtual Vec4 vertex(const int faceIndex, const int index) const {
-        Vec3 v = model.getVertex(faceIndex, index);
-        Vec4 homogeneous {v.x, v.y, v.z, 1.0};
-        return gl.transfromToClip(gl.transformToEye(homogeneous));
-    }
-
-    virtual std::pair<bool, TGAColor> fragment(const Vec3& bar) const {
-        return {false, color};
-    }
-
-    const Model& model;
-    const gl::Context& gl;
-    TGAColor color {};
-};
-
 struct PhongShader : IShader {
     PhongShader(const Model& m, const gl::Context& g, const Vec3& l) : model(m), gl(g) {
-        Vec4 temp = normalized(gl.transformToEye(Vec4(l.x, l.y, l.z, 0.0)));
-        light.x = temp.x, light.y = temp.y, light.z  = temp.z;
+        light = normalized(gl.transformToEye(Vec4(l.x, l.y, l.z, 0.0))).xyz();
     }
 
     virtual Vec4 vertex(const int faceIndex, const int vertIndex, const int triIndex) {
+        // Get the vertex indices in eye coordinates
         Vec3 v = model.getVertex(faceIndex, vertIndex);
-        Vec4 homogeneous {v.x, v.y, v.z, 1.0};
-        Vec4 eye_coordinates = gl.transformToEye(homogeneous);
-        triangle[triIndex].x = eye_coordinates.x, triangle[triIndex].y = eye_coordinates.y, triangle[triIndex].z = eye_coordinates.z;
-        return gl.transfromToClip(eye_coordinates);
+        Vec4 v_eye = gl.transformToEye(Vec4(v.x, v.y, v.z, 1.0));
+        triangle[0][triIndex] = v_eye.xyz();
+
+        // Get the vertex normals in eye coordinates
+        Vec3 vn = model.getNormal(faceIndex, vertIndex);
+        triangle[2][triIndex] = normalized(gl.transformNormal(Vec4(vn.x, vn.y, vn.z, 0.0)).xyz());
+        return gl.transformToClip(v_eye);
     }
 
     virtual std::pair<bool, TGAColor> fragment(const Vec3& bar) const {
-        Vec3 normal = normalized(cross(triangle[1] - triangle[0], triangle[2] - triangle[0]));
+        Vec3 normal = normalized(bar[0] * triangle[2][0] + 
+                                bar[1] * triangle[2][1] + 
+                                bar[2] * triangle[2][2]);
         Vec3 reflected = 2 * dot(normal, light) * normal - light;
-        Vec3 centroid = (triangle[0] + triangle[1] + triangle[2]) / 3;
-        Vec3 view = normalized(-centroid);
         TGAColor fragColor = {255, 255, 255, 255};
         double ambient = 0.3;
         double diff = std::max(0.0, dot(normal, light));
-        double spec = binpow(std::max(0.0, dot(reflected, view)), 36);
+        double spec = binpow(std::max(0.0, reflected.z), 36);   // the camera lies in the z-axis in eye coordinates
         for (int i = 0; i < 3; i++)
             fragColor[i] *= std::min(1.0, ambient + 0.4 * diff + 0.9 * spec);
         return {false, fragColor};
@@ -79,7 +64,8 @@ struct PhongShader : IShader {
     const gl::Context& gl;
     TGAColor color {};
     Vec3 light {};                      // direction of light in eye coordinates
-    std::array<Vec3, 3> triangle {};    // Triangle primitive in eye coordinates
+    // Triangle primitive in eye coordinates (0 = vertex indices, 1 = texture coordinates, 2 = vertex normals)
+    std::array<std::array<Vec3, 3>, 3> triangle {};
 };
 
 int main(int argc, char** argv) {
@@ -90,7 +76,7 @@ int main(int argc, char** argv) {
     TGAImage framebuffer(width, height, TGAImage::RGB, {177, 195, 209, 255});
     CameraContext camera {};
     camera.x = width/16, camera.y = height/16, camera.w = width*7/8, camera.h = width*7/8;
-    camera.eye    = {0.0, 0.0, 5.0};
+    camera.eye    = {-1.0, 0.0, 2.0};
     camera.center = {0.0, 0.0, 0.0};
     camera.up     = {0.0, 1.0, 0.0};
     camera.distance = modulus(camera.eye - camera.center);
