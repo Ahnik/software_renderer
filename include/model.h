@@ -32,26 +32,13 @@ public:
     // The constructor (throws std::runtime exception)
     Model(const std::string& filename) noexcept(false);
 
-    // helper function to get the vertex of a face
-    Vec4 getVertex(const int faceIndex, const int vertIndex) const {
-        return m_vertices[m_faces[faceIndex][vertIndex][0]];
-    }
-
-    // helper function to get the vector normal of a vertex of a face
-    Vec4 getNormal(const int faceIndex, const int vertIndex) const {
-        return m_normals[m_faces[faceIndex][vertIndex][2]];
-    }
-
-    // helper function to get the normal from UV space
-    Vec4 getNormal(const Vec3& uv) const {
-        TGAColor color = m_normalmap.get(uv[0] * m_normalmap.width(), uv[1] * m_normalmap.height());
-        return Vec4(color[2], color[1], color[0], 0.0) * 2.0/255.0 - Vec4(1.0, 1.0, 1.0, 0.0);
-    }
-
-    // helper function to get the texture coordinates
-    Vec3 getTexture(const int faceIndex, const int vertIndex) const {
-        return m_textures[m_faces[faceIndex][vertIndex][1]];
-    }
+    // helper functions
+    Vec4 getVertex(const int faceIndex, const int vertIndex) const;
+    Vec4 getNormal(const int faceIndex, const int vertIndex) const;
+    Vec4 getNormal(const Vec3& uv) const;
+    Vec3 getTexture(const int faceIndex, const int vertIndex) const;
+    TGAColor getDiffuse(const Vec3& uv) const;
+    TGAColor getSpec(const Vec3& uv) const;
 
     // getter functions
     std::size_t getFaceCount() const { return m_faces.size(); }
@@ -72,8 +59,8 @@ private:
     std::vector<Vec3> m_textures   {};
     std::vector<Vec3> m_parameters {};
 
-    // Normal map texture
-    TGAImage m_normalmap {};
+    // Image maps
+    TGAImage m_normalmap {}, m_diffusemap {}, m_specmap {};
 };
 
 #endif

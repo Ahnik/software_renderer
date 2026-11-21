@@ -58,6 +58,8 @@ Model::Model(const std::string& filename) {
         std::cerr << "Texture file " << textureFile << " loading: " << (img.read_tga_file(textureFile.c_str()) ? "OK" : "Failed") << '\n';
     };
     loadTexture("_nm.tga", m_normalmap);
+    loadTexture("_diffuse.tga", m_diffusemap);
+    loadTexture("_spec.tga", m_specmap);
 }
 
 ParseError Model::parseVertex(std::string_view line) {
@@ -198,4 +200,35 @@ ParseError Model::parseParameter(std::string_view line) {
     }
     m_parameters.emplace_back(parameters);
     return ParseError::Ok;
+}
+
+// helper function to get the vertex of a face
+Vec4 Model::getVertex(const int faceIndex, const int vertIndex) const {
+    return m_vertices[m_faces[faceIndex][vertIndex][0]];
+}
+
+// helper function to get the vector normal of a vertex of a face
+Vec4 Model::getNormal(const int faceIndex, const int vertIndex) const {
+    return m_normals[m_faces[faceIndex][vertIndex][2]];
+}
+
+// helper function to get the normal from UV space
+Vec4 Model::getNormal(const Vec3& uv) const {
+    TGAColor color = m_normalmap.get(uv[0] * m_normalmap.width(), uv[1] * m_normalmap.height());
+    return Vec4(color[2], color[1], color[0], 0.0) * 2.0/255.0 - Vec4(1.0, 1.0, 1.0, 0.0);
+}
+
+// helper function to get the texture coordinates
+Vec3 Model::getTexture(const int faceIndex, const int vertIndex) const {
+    return m_textures[m_faces[faceIndex][vertIndex][1]];
+}
+
+// helper function to get the diffusion color from texture coordinates
+TGAColor Model::getDiffuse(const Vec3& uv) const {
+    return m_diffusemap.get(uv[0] * m_diffusemap.width(), uv[1] * m_diffusemap.height());
+}
+
+// helper function to get the specular weight from texture coordinates
+TGAColor Model::getSpec(const Vec3& uv) const {
+    return m_specmap.get(uv[0] * m_specmap.width(), uv[1] * m_specmap.height());
 }

@@ -19,6 +19,7 @@ constexpr std::size_t height = 800;
 template<std::integral N>
 double binpow(double a, N b) {
     if (a == 0.0 || a == 1.0) return a;
+    if (b == 0) return 1.0;
     double res = 1;
     while (b > 0) {
         if (b & 1)
@@ -53,12 +54,12 @@ struct PhongShader : IShader {
         Vec3 uv = bar[0] * varying_uv[0] + bar[1] * varying_uv[1] + bar[2] * varying_uv[2];
         Vec4 normal = normalized(gl.transformNormal(model.getNormal(uv)));
         Vec4 reflected = 2 * dot(normal, light) * normal - light;
-        TGAColor fragColor = {255, 255, 255, 255};
-        double ambient = 0.3;
-        double diff = std::max(0.0, dot(normal, light));
-        double spec = binpow(std::max(0.0, reflected.z), 36);   // the camera lies in the z-axis in eye coordinates
+        TGAColor fragColor = model.getDiffuse(uv);
+        double ambient = 0.4;
+        double diffuse = std::max(0.0, dot(normal, light));
+        double specular = (0.5 + 2.0 * model.getSpec(uv)[0]/255.0) * binpow(std::max(0.0, reflected.z), 36);
         for (int i = 0; i < 3; i++)
-            fragColor[i] *= std::min(1.0, ambient + 0.4 * diff + 0.9 * spec);
+            fragColor[i] = std::min<int>(255, fragColor[i] * (ambient + diffuse + specular));
         return {false, fragColor};
     }
 
@@ -66,8 +67,8 @@ struct PhongShader : IShader {
     const gl::Context& gl;
     TGAColor color {};
     Vec4 light {};                      // direction of light in eye coordinates
-    std::array<Vec3, 3> triangle {};       // Triangle primitve in eye coordinates
-    std::array<Vec3, 3> varying_uv {};     // UV coordinates of the points of the triangle
+    std::array<Vec3, 3> triangle {};    // Triangle primitve in eye coordinates
+    std::array<Vec3, 3> varying_uv {};  // UV coordinates of the points of the triangle
 };
 
 int main(int argc, char** argv) {
