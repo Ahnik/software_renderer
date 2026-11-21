@@ -2,11 +2,9 @@
 #include "mat.h"
 #include <fstream>
 #include <stdexcept>
-#include <filesystem>
 #include <string>
 #include <charconv>
-// #include <cmath>
-// #include <algorithm>
+#include <iostream>
 
 constexpr std::string_view whitespaces = " \t\r";
 
@@ -23,11 +21,12 @@ constexpr const char* parseErrorMessage(ParseError error) {
     return "Unknown error";
 }
 
-Model::Model(std::filesystem::path filePath) {
-    std::ifstream file(filePath);
+Model::Model(const std::string& filename) {
+    std::ifstream file;
+    file.open(filename, std::ifstream::in);
 
     if (!file.is_open())
-        throw std::runtime_error("Failed to open model file: " + filePath.string());
+        throw std::runtime_error("Failed to open model file: " + filename);
 
     std::string rawLine;
     while (std::getline(file, rawLine)) {
@@ -50,12 +49,20 @@ Model::Model(std::filesystem::path filePath) {
         if (error != ParseError::Ok)
             throw std::runtime_error(parseErrorMessage(error));
     }
+    std::cerr << "Vertices: " << m_vertices.size() << " Faces: " << m_faces.size() << '\n';
+
+    auto loadTexture = [&filename](const std::string& suffix, TGAImage& img) {
+        std::size_t dot = filename.find_last_of(".");
+        if (dot == std::string::npos) return;
+        std::string textureFile = filename.substr(0, dot) + suffix;
+        std::cerr << "Texture file " << textureFile << " loading: " << (img.read_tga_file(textureFile.c_str()) ? "OK" : "Failed") << '\n';
+    };
+    loadTexture("_nm.tga", m_normalmap);
 }
 
 ParseError Model::parseVertex(std::string_view line) {
     line.remove_prefix(2);
-    Vec3 vertex {0.0, 0.0, 0.0};
-    double w {1.0};
+    Vec4 vertex {0.0, 0.0, 0.0, 1.0};
     for (int i = 0; i < 4; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos) {
@@ -64,8 +71,7 @@ ParseError Model::parseVertex(std::string_view line) {
         }
         line.remove_prefix(pos);
 
-        double& value = (i < 3) ? vertex[i] : w;
-        auto [ptr, ec] = std::from_chars(line.data(), line.data() + line.size(), value);
+        auto [ptr, ec] = std::from_chars(line.data(), line.data() + line.size(), vertex[i]);
         if (ec == std::errc())
             line.remove_prefix(ptr - line.data());
         else if (ec == std::errc::invalid_argument)
@@ -73,7 +79,7 @@ ParseError Model::parseVertex(std::string_view line) {
         else if (ec == std::errc::result_out_of_range)
             return ParseError::OutOfRange;
     }
-    vertex[0] /= w, vertex[1] /= w, vertex[2] /= w;
+    vertex = vertex / vertex.w;
     m_vertices.emplace_back(vertex);
     return ParseError::Ok;
 }
@@ -128,7 +134,7 @@ ParseError Model::parseFace(std::string_view line) {
 
 ParseError Model::parseNormal(std::string_view line) {
     line.remove_prefix(3);
-    Vec3 normal {0.0, 0.0, 0.0};
+    Vec4 normal {0.0, 0.0, 0.0, 0.0};
     for (int i = 0; i < 3; i++) {
         std::string_view::size_type pos = line.find_first_not_of(whitespaces);
         if (pos == std::string_view::npos)
@@ -143,7 +149,7 @@ ParseError Model::parseNormal(std::string_view line) {
         else if (ec == std::errc::result_out_of_range)
             return ParseError::OutOfRange;
     }
-    m_normals.emplace_back(normal);
+    m_normals.emplace_back(normalized(normal));
     return ParseError::Ok;
 }
 
@@ -166,6 +172,7 @@ ParseError Model::parseTexture(std::string_view line) {
         else if (ec == std::errc::result_out_of_range)
             return ParseError::OutOfRange;
     }
+    texture.y = 1 - texture.y;
     m_textures.emplace_back(texture);
     return ParseError::Ok;
 }
