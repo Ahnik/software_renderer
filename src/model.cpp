@@ -57,7 +57,7 @@ Model::Model(const std::string& filename) {
         std::string textureFile = filename.substr(0, dot) + suffix;
         std::cerr << "Texture file " << textureFile << " loading: " << (img.read_tga_file(textureFile.c_str()) ? "OK" : "Failed") << '\n';
     };
-    loadTexture("_nm.tga", m_normalmap);
+    loadTexture("_nm_tangent.tga", m_normalmap);
     loadTexture("_diffuse.tga", m_diffusemap);
     loadTexture("_spec.tga", m_specmap);
 }

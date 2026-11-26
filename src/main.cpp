@@ -36,28 +36,38 @@ struct PhongShader : IShader {
     }
 
     virtual Vec4 vertex(const int faceIndex, const int vertIndex, const int triIndex) {
-        // Get the vertex indices in eye coordinates
-        // Vec3 v = model.getVertex(faceIndex, vertIndex);
-        // Vec4 v_eye = gl.transformToEye(Vec4(v.x, v.y, v.z, 1.0));
-        // triangle[0][triIndex] = v_eye.xyz();
-
-        // // Get the vertex normals in eye coordinates
-        // Vec3 vn = model.getNormal(faceIndex, vertIndex);
-        // triangle[2][triIndex] = normalized(gl.transformNormal(Vec4(vn.x, vn.y, vn.z, 0.0)).xyz());
-        // return gl.transformToClip(v_eye);
+        // UV coordinates, normals and vertices are stored in eye coordinates
         varying_uv[triIndex] = model.getTexture(faceIndex, vertIndex);
+        varying_normals[triIndex] = normalized(gl.transformNormal(model.getNormal(faceIndex, vertIndex)));
         Vec4 v_eye = gl.transformToEye(model.getVertex(faceIndex, vertIndex));
+        triangle[triIndex] = v_eye;
         return gl.transformToClip(v_eye);
     }
 
     virtual std::pair<bool, TGAColor> fragment(const Vec3& bar) const {
         Vec3 uv = bar[0] * varying_uv[0] + bar[1] * varying_uv[1] + bar[2] * varying_uv[2];
-        Vec4 normal = normalized(gl.transformNormal(model.getNormal(uv)));
+        Vec4 edge1 = triangle[1] - triangle[0];
+        Vec4 edge2 = triangle[2] - triangle[0];
+        Vec2 u1 = varying_uv[1].xy() - varying_uv[0].xy();
+        Vec2 u2 = varying_uv[2].xy() - varying_uv[0].xy();
+        Mat<4, 2> E = transpose(Mat<2, 4>({edge1, edge2}));
+        Mat2      U = transpose(Mat2({u1, u2}));
+        Mat<2, 4> M;
+        if (determinant(U) != 0.0)
+            M = transpose(E * inverse(U));
+        Mat4 D = {
+            normalized(M[0]),
+            normalized(M[1]),
+            normalized(varying_normals[0] * bar[0] + varying_normals[1] * bar[1] + varying_normals[2] * bar[2]),
+            {0.0, 0.0, 0.0, 1.0}
+        };
+        Vec4 normal = normalized(transpose(D) * model.getNormal(uv));
+
         Vec4 reflected = 2 * dot(normal, light) * normal - light;
         TGAColor fragColor = model.getDiffuse(uv);
         double ambient = 0.4;
         double diffuse = std::max(0.0, dot(normal, light));
-        double specular = (0.5 + 2.0 * model.getSpec(uv)[0]/255.0) * binpow(std::max(0.0, reflected.z), 36);
+        double specular = (0.5 + 2.0 * model.getSpec(uv)[0]/255.0) * binpow(std::max(0.0, reflected.z), 35);
         for (int i = 0; i < 3; i++)
             fragColor[i] = std::min<int>(255, fragColor[i] * (ambient + diffuse + specular));
         return {false, fragColor};
@@ -67,8 +77,9 @@ struct PhongShader : IShader {
     const gl::Context& gl;
     TGAColor color {};
     Vec4 light {};                      // direction of light in eye coordinates
-    std::array<Vec3, 3> triangle {};    // Triangle primitve in eye coordinates
+    std::array<Vec4, 3> triangle {};    // Triangle primitve in eye coordinates
     std::array<Vec3, 3> varying_uv {};  // UV coordinates of the points of the triangle
+    std::array<Vec4, 3> varying_normals {};
 };
 
 int main(int argc, char** argv) {
